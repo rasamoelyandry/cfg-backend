@@ -157,6 +157,78 @@ public class MenuService {
         itemRepository.save(item);
     }
 
+    // ─── Duplication ─────────────────────────────────────────────
+
+    @Transactional
+    public MenuResponse duplicateMenu(UUID sourceId, UUID targetId) {
+        if (sourceId.equals(targetId)) {
+            throw new BusinessException("Source et destination identiques");
+        }
+        requireRestaurant(sourceId);
+        requireRestaurant(targetId);
+
+        // Soft-delete existing categories + items du restaurant cible
+        List<MenuCategory> existingCats =
+                categoryRepository.findAllByRestaurantIdAndIsActiveTrueOrderBySortOrder(targetId);
+        for (MenuCategory cat : existingCats) {
+            List<MenuItem> items =
+                    itemRepository.findAllByCategoryIdAndIsAvailableTrueOrderBySortOrder(cat.getId());
+            items.forEach(i -> i.setAvailable(false));
+            itemRepository.saveAll(items);
+            cat.setActive(false);
+        }
+        categoryRepository.saveAll(existingCats);
+
+        // Charger les données sources
+        List<MenuCategory> sourceCats =
+                categoryRepository.findAllByRestaurantIdAndIsActiveTrueOrderBySortOrder(sourceId);
+        List<MenuItem> sourceItems =
+                itemRepository.findAllByRestaurantIdAndIsAvailableTrueOrderByCategoryIdAscSortOrderAsc(sourceId);
+
+        Map<UUID, List<MenuItem>> byCategory = sourceItems.stream()
+                .collect(Collectors.groupingBy(MenuItem::getCategoryId));
+
+        // Copier catégories + items vers la cible
+        for (MenuCategory src : sourceCats) {
+            MenuCategory newCat = categoryRepository.save(
+                    MenuCategory.builder()
+                            .restaurantId(targetId)
+                            .name(src.getName())
+                            .description(src.getDescription())
+                            .sortOrder(src.getSortOrder())
+                            .isActive(true)
+                            .build()
+            );
+
+            List<MenuItem> catItems = byCategory.getOrDefault(src.getId(), List.of());
+            for (MenuItem srcItem : catItems) {
+                List<MenuItemModifier> newMods = srcItem.getModifiers().stream()
+                        .map(m -> MenuItemModifier.builder()
+                                .name(m.getName())
+                                .priceDelta(m.getPriceDelta())
+                                .isDefault(m.isDefault())
+                                .build())
+                        .collect(Collectors.toList());
+
+                itemRepository.save(
+                        MenuItem.builder()
+                                .restaurantId(targetId)
+                                .categoryId(newCat.getId())
+                                .name(srcItem.getName())
+                                .description(srcItem.getDescription())
+                                .price(srcItem.getPrice())
+                                .imageUrl(srcItem.getImageUrl())
+                                .sortOrder(srcItem.getSortOrder())
+                                .isAvailable(true)
+                                .modifiers(newMods)
+                                .build()
+                );
+            }
+        }
+
+        return getFullMenu(targetId);
+    }
+
     // ─── Helpers ─────────────────────────────────────────────────
 
     private void requireRestaurant(UUID restaurantId) {

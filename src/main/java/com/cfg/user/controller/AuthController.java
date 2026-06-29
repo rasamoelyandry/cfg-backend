@@ -35,12 +35,18 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@AuthenticationPrincipal UserPrincipal principal) {
-        authService.logout(principal.getId().toString());
+        if (principal != null) {
+            authService.logout(principal.getId().toString());
+        }
         return ResponseEntity.ok(ApiResponse.ok("Logged out"));
     }
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserResponse>> me(@AuthenticationPrincipal UserPrincipal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(ApiResponse.<UserResponse>builder()
+                    .success(false).message("Non authentifié").build());
+        }
         var user = userRepository.findById(principal.getId())
                 .orElseThrow();
         return ResponseEntity.ok(ApiResponse.ok(UserResponse.from(user)));

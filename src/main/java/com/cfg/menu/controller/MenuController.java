@@ -90,6 +90,15 @@ public class MenuController {
                 menuService.setAvailability(restaurantId, itemId, available)));
     }
 
+    @PostMapping("/menu/copy-from/{sourceRestaurantId}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<ApiResponse<MenuResponse>> copyMenuFrom(
+            @PathVariable UUID restaurantId,
+            @PathVariable UUID sourceRestaurantId) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                menuService.duplicateMenu(sourceRestaurantId, restaurantId)));
+    }
+
     @DeleteMapping("/items/{itemId}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','OWNER','MANAGER')")
     public ResponseEntity<ApiResponse<Void>> deleteItem(

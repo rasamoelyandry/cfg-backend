@@ -5,3 +5,7 @@ spring:
     redis:
       connect-timeout: 500ms     # fail-fast si Redis absent
       timeout: 500ms
+
+cfg:
+  jwt:
+    access-token-expiry-ms: 28800000   # 8 heures en dev (défaut prod : 15 min)
