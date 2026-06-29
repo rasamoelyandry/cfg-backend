@@ -21,9 +21,11 @@ public class RestaurantTable extends BaseEntity {
     @Column(length = 50)
     private String label;
 
+    @Builder.Default
     @Column(nullable = false)
     private int capacity = 4;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean isActive = true;
 }

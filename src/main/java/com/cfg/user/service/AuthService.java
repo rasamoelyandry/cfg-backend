@@ -47,11 +47,15 @@ public class AuthService {
                 user.getId(), user.getRole().name(), user.getRestaurantId());
         String refreshToken = jwtService.generateRefreshToken(user.getId());
 
-        redis.opsForValue().set(
-                REFRESH_PREFIX + user.getId(),
-                refreshToken,
-                REFRESH_TTL_DAYS, TimeUnit.DAYS
-        );
+        try {
+            redis.opsForValue().set(
+                    REFRESH_PREFIX + user.getId(),
+                    refreshToken,
+                    REFRESH_TTL_DAYS, TimeUnit.DAYS
+            );
+        } catch (Exception e) {
+            log.warn("Redis unavailable — refresh token not persisted (restart will require re-login): {}", e.getMessage());
+        }
 
         return LoginResponse.builder()
                 .accessToken(accessToken)
@@ -74,9 +78,15 @@ public class AuthService {
             throw new BusinessException("Invalid refresh token");
         }
         var userId = jwtService.extractUserId(refreshToken);
-        String stored = redis.opsForValue().get(REFRESH_PREFIX + userId);
-        if (stored == null || !stored.equals(refreshToken)) {
-            throw new BusinessException("Refresh token expired or revoked");
+        try {
+            String stored = redis.opsForValue().get(REFRESH_PREFIX + userId);
+            if (stored == null || !stored.equals(refreshToken)) {
+                throw new BusinessException("Refresh token expired or revoked");
+            }
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.warn("Redis unavailable — skipping refresh token validation: {}", e.getMessage());
         }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException("User not found"));
@@ -89,7 +99,11 @@ public class AuthService {
     }
 
     public void logout(String userId) {
-        redis.delete(REFRESH_PREFIX + userId);
+        try {
+            redis.delete(REFRESH_PREFIX + userId);
+        } catch (Exception e) {
+            log.warn("Redis unavailable — token not invalidated server-side: {}", e.getMessage());
+        }
     }
 
     private User findUserByCredentials(LoginRequest req) {

@@ -149,6 +149,7 @@ CREATE TABLE payments (
     notes           TEXT,
     paid_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     created_by      UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT payments_method_check CHECK (
         method IN ('CASH','ORANGE_MONEY','MVOLA','AIRTEL_MONEY')
     )

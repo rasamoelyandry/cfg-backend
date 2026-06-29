@@ -32,9 +32,11 @@ public class MenuItem extends BaseEntity {
     @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;
 
+    @Builder.Default
     @Column(name = "sort_order", nullable = false)
     private int sortOrder = 0;
 
+    @Builder.Default
     @Column(name = "is_available", nullable = false)
     private boolean isAvailable = true;
 

@@ -1,0 +1,7 @@
+spring:
+  flyway:
+    validate-on-migrate: false   # désactivé en dev : permet de modifier les migrations sans repair
+  data:
+    redis:
+      connect-timeout: 500ms     # fail-fast si Redis absent
+      timeout: 500ms

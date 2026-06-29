@@ -21,6 +21,7 @@ public class OrderItemModifier {
     @Column(name = "modifier_name", nullable = false, length = 100)
     private String modifierName;
 
+    @Builder.Default
     @Column(name = "price_delta", nullable = false, precision = 10, scale = 2)
     private BigDecimal priceDelta = BigDecimal.ZERO;
 }

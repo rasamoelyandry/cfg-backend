@@ -23,12 +23,15 @@ public class Restaurant extends BaseEntity {
 
     private String email;
 
+    @Builder.Default
     @Column(nullable = false, length = 10)
     private String currency = "MGA";
 
+    @Builder.Default
     @Column(nullable = false, length = 50)
     private String timezone = "Indian/Antananarivo";
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean isActive = true;
 }

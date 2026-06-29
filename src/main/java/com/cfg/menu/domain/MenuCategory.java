@@ -20,9 +20,11 @@ public class MenuCategory extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Builder.Default
     @Column(name = "sort_order", nullable = false)
     private int sortOrder = 0;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean isActive = true;
 }

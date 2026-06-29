@@ -6,7 +6,7 @@ VALUES (
     NULL,
     'admin@cfg.app',
     NULL,
-    '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQyCuxDCUE9.YjXV.G5qlCBIG',  -- Admin@1234
+    '$2a$10$Zru6Zr5/UqNh3y2VMYIXz.N5UqayKRoM42QEwwHJSF8S36gxAMst6',  -- Admin@1234
     'Super',
     'Admin',
     'SUPER_ADMIN',
