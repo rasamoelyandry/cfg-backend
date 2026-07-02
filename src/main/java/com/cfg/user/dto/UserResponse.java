@@ -1,6 +1,7 @@
 package com.cfg.user.dto;
 
 import com.cfg.user.domain.User;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
@@ -16,6 +17,7 @@ public class UserResponse {
     private String firstName;
     private String lastName;
     private String role;
+    @JsonProperty("isActive")
     private boolean isActive;
     private Instant lastLoginAt;
     private Instant createdAt;

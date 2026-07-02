@@ -58,7 +58,7 @@ public class OrderService {
                 .sentToKitchenAt(Instant.now())
                 .build();
 
-        List<OrderItem> items = buildOrderItems(req.getItems(), restaurantId);
+        List<OrderItem> items = buildOrderItems(req.getItems(), restaurantId, order);
         order.setItems(items);
         order.recalculateTotal();
 
@@ -123,7 +123,7 @@ public class OrderService {
             throw new BusinessException("Cannot add items to a closed order");
         }
 
-        List<OrderItem> newItems = buildOrderItems(List.of(itemReq), restaurantId);
+        List<OrderItem> newItems = buildOrderItems(List.of(itemReq), restaurantId, order);
         order.getItems().addAll(newItems);
         order.recalculateTotal();
 
@@ -163,13 +163,22 @@ public class OrderService {
         }
     }
 
-    private List<OrderItem> buildOrderItems(List<CreateOrderRequest.OrderItemRequest> requests, UUID restaurantId) {
+    private List<OrderItem> buildOrderItems(List<CreateOrderRequest.OrderItemRequest> requests, UUID restaurantId, Order order) {
         return requests.stream().map(req -> {
             MenuItem menuItem = menuItemRepository.findById(req.getMenuItemId())
                     .orElseThrow(() -> new ResourceNotFoundException("MenuItem", req.getMenuItemId()));
             if (!menuItem.getRestaurantId().equals(restaurantId)) {
                 throw new TenantAccessException("Menu item does not belong to this restaurant");
             }
+
+            OrderItem item = OrderItem.builder()
+                    .order(order)
+                    .menuItemId(menuItem.getId())
+                    .menuItemName(menuItem.getName())
+                    .unitPrice(menuItem.getPrice())
+                    .quantity(Math.max(1, req.getQuantity()))
+                    .notes(req.getNotes())
+                    .build();
 
             List<OrderItemModifier> modifiers = new ArrayList<>();
             if (req.getModifierIds() != null) {
@@ -179,21 +188,16 @@ public class OrderService {
                     MenuItemModifier mod = modMap.get(modId);
                     if (mod != null) {
                         modifiers.add(OrderItemModifier.builder()
+                                .orderItem(item)
                                 .modifierName(mod.getName())
                                 .priceDelta(mod.getPriceDelta())
                                 .build());
                     }
                 });
             }
+            item.setModifiers(modifiers);
 
-            return OrderItem.builder()
-                    .menuItemId(menuItem.getId())
-                    .menuItemName(menuItem.getName())
-                    .unitPrice(menuItem.getPrice())
-                    .quantity(Math.max(1, req.getQuantity()))
-                    .notes(req.getNotes())
-                    .modifiers(modifiers)
-                    .build();
+            return item;
         }).collect(Collectors.toList());
     }
 

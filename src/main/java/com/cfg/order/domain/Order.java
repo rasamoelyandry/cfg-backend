@@ -48,8 +48,7 @@ public class Order extends BaseEntity {
     @Column(name = "completed_at")
     private Instant completedAt;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @JoinColumn(name = "order_id")
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
 

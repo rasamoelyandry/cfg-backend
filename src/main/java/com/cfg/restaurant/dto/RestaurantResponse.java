@@ -1,6 +1,7 @@
 package com.cfg.restaurant.dto;
 
 import com.cfg.restaurant.domain.Restaurant;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
@@ -18,6 +19,7 @@ public class RestaurantResponse {
     private String email;
     private String currency;
     private String timezone;
+    @JsonProperty("isActive")
     private boolean isActive;
     private Instant createdAt;
     private Instant updatedAt;

@@ -15,8 +15,9 @@ public class OrderItemModifier {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "order_item_id", nullable = false)
-    private UUID orderItemId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_item_id", nullable = false)
+    private OrderItem orderItem;
 
     @Column(name = "modifier_name", nullable = false, length = 100)
     private String modifierName;

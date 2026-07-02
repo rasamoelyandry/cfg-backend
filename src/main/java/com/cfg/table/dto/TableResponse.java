@@ -1,6 +1,7 @@
 package com.cfg.table.dto;
 
 import com.cfg.table.domain.RestaurantTable;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,6 +15,7 @@ public class TableResponse {
     private int number;
     private String label;
     private int capacity;
+    @JsonProperty("isActive")
     private boolean isActive;
 
     public static TableResponse from(RestaurantTable t) {

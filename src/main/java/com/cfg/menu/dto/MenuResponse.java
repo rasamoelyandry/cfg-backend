@@ -3,6 +3,7 @@ package com.cfg.menu.dto;
 import com.cfg.menu.domain.MenuCategory;
 import com.cfg.menu.domain.MenuItem;
 import com.cfg.menu.domain.MenuItemModifier;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
@@ -23,6 +24,7 @@ public class MenuResponse {
         private String name;
         private String description;
         private int sortOrder;
+        @JsonProperty("isActive")
         private boolean isActive;
         private List<MenuItemDto> items;
 
@@ -47,6 +49,7 @@ public class MenuResponse {
         private String description;
         private BigDecimal price;
         private String imageUrl;
+        @JsonProperty("isAvailable")
         private boolean isAvailable;
         private int sortOrder;
         private List<ModifierDto> modifiers;
@@ -72,6 +75,7 @@ public class MenuResponse {
         private UUID id;
         private String name;
         private BigDecimal priceDelta;
+        @JsonProperty("isDefault")
         private boolean isDefault;
 
         public static ModifierDto from(MenuItemModifier m) {

@@ -17,8 +17,9 @@ public class OrderItem {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "order_id", nullable = false)
-    private UUID orderId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
+    private Order order;
 
     @Column(name = "menu_item_id", nullable = false)
     private UUID menuItemId;
@@ -41,8 +42,7 @@ public class OrderItem {
     @Builder.Default
     private OrderItemStatus status = OrderItemStatus.PENDING;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @JoinColumn(name = "order_item_id")
+    @OneToMany(mappedBy = "orderItem", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
     private List<OrderItemModifier> modifiers = new ArrayList<>();
 }
