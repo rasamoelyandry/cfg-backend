@@ -97,11 +97,14 @@ public class OrderService {
         if (newStatus == OrderStatus.PAID || newStatus == OrderStatus.CANCELLED) {
             order.setCompletedAt(Instant.now());
         }
-        if (newStatus == OrderStatus.CANCELLED) {
-            order.getItems().forEach(i -> menuItemRepository.restoreStock(i.getMenuItemId(), i.getQuantity()));
-        }
+        List<OrderItem> itemsToRestore = newStatus == OrderStatus.CANCELLED
+                ? new ArrayList<>(order.getItems())
+                : List.of();
 
         Order saved = orderRepository.save(order);
+        // Restitution du stock apres la sauvegarde : la requete bulk (clearAutomatically)
+        // detache le contexte de persistance.
+        itemsToRestore.forEach(i -> menuItemRepository.restoreStock(i.getMenuItemId(), i.getQuantity()));
         eventPublisher.publishOrderEvent("ORDER_STATUS_CHANGED", saved);
         return OrderResponse.from(saved);
     }
@@ -140,14 +143,23 @@ public class OrderService {
         Order order = findOrderInRestaurant(restaurantId, orderId);
         requireNotYetInKitchen(order);
 
-        order.getItems().stream()
+        OrderItem removed = order.getItems().stream()
                 .filter(i -> i.getId().equals(itemId))
                 .findFirst()
-                .ifPresent(i -> menuItemRepository.restoreStock(i.getMenuItemId(), i.getQuantity()));
+                .orElse(null);
 
         order.getItems().removeIf(i -> i.getId().equals(itemId));
         order.recalculateTotal();
-        return OrderResponse.from(orderRepository.save(order));
+        Order saved = orderRepository.save(order);
+
+        // Restitution du stock en dernier : la requete bulk (clearAutomatically) detache le
+        // contexte de persistance, donc tout acces a une collection lazy non chargee doit se
+        // faire avant cet appel.
+        if (removed != null) {
+            menuItemRepository.restoreStock(removed.getMenuItemId(), removed.getQuantity());
+        }
+
+        return OrderResponse.from(saved);
     }
 
     private void requireNotYetInKitchen(Order order) {
@@ -190,6 +202,11 @@ public class OrderService {
                 throw new TenantAccessException("Menu item does not belong to this restaurant");
             }
 
+            // Materialiser les modifiers pendant que menuItem est encore attache,
+            // avant que decrementStock (bulk update, clearAutomatically) ne vide le contexte de persistance.
+            Map<UUID, MenuItemModifier> modMap = menuItem.getModifiers().stream()
+                    .collect(Collectors.toMap(MenuItemModifier::getId, m -> m));
+
             int quantity = Math.max(1, req.getQuantity());
             if (menuItem.isTrackStock()) {
                 int updated = menuItemRepository.decrementStock(menuItem.getId(), quantity);
@@ -209,8 +226,6 @@ public class OrderService {
 
             List<OrderItemModifier> modifiers = new ArrayList<>();
             if (req.getModifierIds() != null) {
-                Map<UUID, MenuItemModifier> modMap = menuItem.getModifiers().stream()
-                        .collect(Collectors.toMap(MenuItemModifier::getId, m -> m));
                 req.getModifierIds().forEach(modId -> {
                     MenuItemModifier mod = modMap.get(modId);
                     if (mod != null) {
