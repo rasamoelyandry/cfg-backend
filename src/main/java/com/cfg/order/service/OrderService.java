@@ -189,12 +189,14 @@ public class OrderService {
     private void markTableOccupied(UUID tableId, UUID restaurantId) {
         var table = tableRepository.findById(tableId)
                 .orElseThrow(() -> new ResourceNotFoundException("Table", tableId));
+        log.info("markTableOccupied CALLED: tableId={} currentOccupied={}", tableId, table.isOccupied());
         if (!table.getRestaurantId().equals(restaurantId)) {
             throw new TenantAccessException("Table does not belong to this restaurant");
         }
         if (!table.isOccupied()) {
             table.setOccupied(true);
-            tableRepository.save(table);
+            var saved = tableRepository.save(table);
+            log.info("markTableOccupied SAVED: tableId={} occupiedAfterSave={}", saved.getId(), saved.isOccupied());
         }
     }
 
