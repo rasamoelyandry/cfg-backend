@@ -25,4 +25,8 @@ public class UpdateMenuItemRequest {
     private Integer sortOrder;
 
     private Boolean isAvailable;
+
+    private Boolean trackStock;
+
+    private Integer stockQuantity;
 }

@@ -52,6 +52,8 @@ public class MenuResponse {
         @JsonProperty("isAvailable")
         private boolean isAvailable;
         private int sortOrder;
+        private boolean trackStock;
+        private int stockQuantity;
         private List<ModifierDto> modifiers;
 
         public static MenuItemDto from(MenuItem i) {
@@ -64,6 +66,8 @@ public class MenuResponse {
                     .imageUrl(i.getImageUrl())
                     .isAvailable(i.isAvailable())
                     .sortOrder(i.getSortOrder())
+                    .trackStock(i.isTrackStock())
+                    .stockQuantity(i.getStockQuantity())
                     .modifiers(i.getModifiers().stream().map(ModifierDto::from).collect(Collectors.toList()))
                     .build();
         }

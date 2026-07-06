@@ -40,6 +40,14 @@ public class MenuItem extends BaseEntity {
     @Column(name = "is_available", nullable = false)
     private boolean isAvailable = true;
 
+    @Builder.Default
+    @Column(name = "track_stock", nullable = false)
+    private boolean trackStock = false;
+
+    @Builder.Default
+    @Column(name = "stock_quantity", nullable = false)
+    private int stockQuantity = 0;
+
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JoinColumn(name = "menu_item_id")
     @Builder.Default

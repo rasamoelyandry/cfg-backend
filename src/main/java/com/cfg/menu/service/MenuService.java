@@ -117,7 +117,9 @@ public class MenuService {
                 .price(req.getPrice())
                 .imageUrl(req.getImageUrl())
                 .sortOrder(req.getSortOrder())
-                .isAvailable(true)
+                .isAvailable(!req.isTrackStock() || req.getStockQuantity() > 0)
+                .trackStock(req.isTrackStock())
+                .stockQuantity(req.getStockQuantity())
                 .modifiers(modifiers)
                 .build();
 
@@ -138,7 +140,15 @@ public class MenuService {
         if (req.getPrice() != null)       item.setPrice(req.getPrice());
         if (req.getImageUrl() != null)    item.setImageUrl(req.getImageUrl());
         if (req.getSortOrder() != null)   item.setSortOrder(req.getSortOrder());
-        if (req.getIsAvailable() != null) item.setAvailable(req.getIsAvailable());
+        if (req.getTrackStock() != null)  item.setTrackStock(req.getTrackStock());
+        if (req.getStockQuantity() != null) item.setStockQuantity(req.getStockQuantity());
+
+        if (item.isTrackStock()) {
+            // Dispo derivee automatiquement du stock quand le suivi est actif
+            item.setAvailable(item.getStockQuantity() > 0);
+        } else if (req.getIsAvailable() != null) {
+            item.setAvailable(req.getIsAvailable());
+        }
 
         return MenuResponse.MenuItemDto.from(itemRepository.save(item));
     }
@@ -146,8 +156,24 @@ public class MenuService {
     @Transactional
     public MenuResponse.MenuItemDto setAvailability(UUID restaurantId, UUID itemId, boolean available) {
         MenuItem item = findItem(restaurantId, itemId);
+        if (item.isTrackStock()) {
+            throw new BusinessException("Cet article suit son stock : la disponibilité est automatique, réapprovisionnez-le plutôt");
+        }
         item.setAvailable(available);
         return MenuResponse.MenuItemDto.from(itemRepository.save(item));
+    }
+
+    @Transactional
+    public MenuResponse.MenuItemDto restockItem(UUID restaurantId, UUID itemId, int quantity) {
+        if (quantity <= 0) {
+            throw new BusinessException("La quantité à ajouter doit être positive");
+        }
+        MenuItem item = findItem(restaurantId, itemId);
+        if (!item.isTrackStock()) {
+            throw new BusinessException("Cet article ne suit pas son stock — activez le suivi de stock d'abord");
+        }
+        itemRepository.addStock(itemId, quantity);
+        return MenuResponse.MenuItemDto.from(findItem(restaurantId, itemId));
     }
 
     @Transactional

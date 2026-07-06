@@ -30,6 +30,10 @@ public class CreateMenuItemRequest {
 
     private int sortOrder = 0;
 
+    private boolean trackStock = false;
+
+    private int stockQuantity = 0;
+
     private List<ModifierRequest> modifiers;
 
     @Data

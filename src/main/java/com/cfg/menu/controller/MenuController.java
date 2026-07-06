@@ -90,6 +90,17 @@ public class MenuController {
                 menuService.setAvailability(restaurantId, itemId, available)));
     }
 
+    @PatchMapping("/items/{itemId}/restock")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','OWNER','MANAGER')")
+    public ResponseEntity<ApiResponse<MenuResponse.MenuItemDto>> restockItem(
+            @PathVariable UUID restaurantId,
+            @PathVariable UUID itemId,
+            @RequestBody Map<String, Integer> body) {
+        int quantity = body.getOrDefault("quantity", 0);
+        return ResponseEntity.ok(ApiResponse.ok(
+                menuService.restockItem(restaurantId, itemId, quantity)));
+    }
+
     @PostMapping("/menu/copy-from/{sourceRestaurantId}")
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<ApiResponse<MenuResponse>> copyMenuFrom(

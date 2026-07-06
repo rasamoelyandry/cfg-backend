@@ -97,6 +97,9 @@ public class OrderService {
         if (newStatus == OrderStatus.PAID || newStatus == OrderStatus.CANCELLED) {
             order.setCompletedAt(Instant.now());
         }
+        if (newStatus == OrderStatus.CANCELLED) {
+            order.getItems().forEach(i -> menuItemRepository.restoreStock(i.getMenuItemId(), i.getQuantity()));
+        }
 
         Order saved = orderRepository.save(order);
         eventPublisher.publishOrderEvent("ORDER_STATUS_CHANGED", saved);
@@ -136,6 +139,11 @@ public class OrderService {
     public OrderResponse removeItem(UUID restaurantId, UUID orderId, UUID itemId) {
         Order order = findOrderInRestaurant(restaurantId, orderId);
         requireNotYetInKitchen(order);
+
+        order.getItems().stream()
+                .filter(i -> i.getId().equals(itemId))
+                .findFirst()
+                .ifPresent(i -> menuItemRepository.restoreStock(i.getMenuItemId(), i.getQuantity()));
 
         order.getItems().removeIf(i -> i.getId().equals(itemId));
         order.recalculateTotal();
@@ -182,12 +190,20 @@ public class OrderService {
                 throw new TenantAccessException("Menu item does not belong to this restaurant");
             }
 
+            int quantity = Math.max(1, req.getQuantity());
+            if (menuItem.isTrackStock()) {
+                int updated = menuItemRepository.decrementStock(menuItem.getId(), quantity);
+                if (updated == 0) {
+                    throw new BusinessException("Stock insuffisant pour " + menuItem.getName());
+                }
+            }
+
             OrderItem item = OrderItem.builder()
                     .order(order)
                     .menuItemId(menuItem.getId())
                     .menuItemName(menuItem.getName())
                     .unitPrice(menuItem.getPrice())
-                    .quantity(Math.max(1, req.getQuantity()))
+                    .quantity(quantity)
                     .notes(req.getNotes())
                     .build();
 
