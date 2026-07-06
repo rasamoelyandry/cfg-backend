@@ -119,9 +119,7 @@ public class OrderService {
     @Transactional
     public OrderResponse addItem(UUID restaurantId, UUID orderId, CreateOrderRequest.OrderItemRequest itemReq) {
         Order order = findOrderInRestaurant(restaurantId, orderId);
-        if (order.getStatus() == OrderStatus.PAID || order.getStatus() == OrderStatus.CANCELLED) {
-            throw new BusinessException("Cannot add items to a closed order");
-        }
+        requireNotYetInKitchen(order);
 
         List<OrderItem> newItems = buildOrderItems(List.of(itemReq), restaurantId, order);
         order.getItems().addAll(newItems);
@@ -135,13 +133,17 @@ public class OrderService {
     @Transactional
     public OrderResponse removeItem(UUID restaurantId, UUID orderId, UUID itemId) {
         Order order = findOrderInRestaurant(restaurantId, orderId);
-        if (order.getStatus() == OrderStatus.PAID || order.getStatus() == OrderStatus.CANCELLED) {
-            throw new BusinessException("Cannot remove items from a closed order");
-        }
+        requireNotYetInKitchen(order);
 
         order.getItems().removeIf(i -> i.getId().equals(itemId));
         order.recalculateTotal();
         return OrderResponse.from(orderRepository.save(order));
+    }
+
+    private void requireNotYetInKitchen(Order order) {
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new BusinessException("La commande a déjà été prise en charge par la cuisine, elle ne peut plus être modifiée par le serveur");
+        }
     }
 
     // --- Private helpers ---
