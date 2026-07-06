@@ -48,6 +48,10 @@ public class Order extends BaseEntity {
     @Column(name = "completed_at")
     private Instant completedAt;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean hidden = false;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();

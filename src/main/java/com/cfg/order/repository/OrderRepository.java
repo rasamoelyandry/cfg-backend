@@ -13,9 +13,11 @@ import java.util.UUID;
 
 public interface OrderRepository extends JpaRepository<Order, UUID> {
 
-    Page<Order> findAllByRestaurantIdOrderByCreatedAtDesc(UUID restaurantId, Pageable pageable);
+    Page<Order> findAllByRestaurantIdAndHiddenFalseOrderByCreatedAtDesc(UUID restaurantId, Pageable pageable);
 
-    @Query("SELECT o FROM Order o WHERE o.restaurantId = :restaurantId AND o.status NOT IN ('PAID','CANCELLED') ORDER BY o.createdAt ASC")
+    Page<Order> findAllByRestaurantIdAndStatusAndHiddenFalseOrderByCreatedAtDesc(UUID restaurantId, OrderStatus status, Pageable pageable);
+
+    @Query("SELECT o FROM Order o WHERE o.restaurantId = :restaurantId AND o.hidden = false AND o.status NOT IN ('PAID','CANCELLED') ORDER BY o.createdAt ASC")
     List<Order> findActiveOrdersByRestaurant(UUID restaurantId);
 
     List<Order> findAllByRestaurantIdAndStatus(UUID restaurantId, OrderStatus status);

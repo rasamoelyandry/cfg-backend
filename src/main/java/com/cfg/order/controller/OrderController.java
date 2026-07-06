@@ -3,6 +3,7 @@ package com.cfg.order.controller;
 import com.cfg.common.dto.ApiResponse;
 import com.cfg.common.dto.PageResponse;
 import com.cfg.common.security.UserPrincipal;
+import com.cfg.order.domain.OrderStatus;
 import com.cfg.order.dto.*;
 import com.cfg.order.service.OrderService;
 import jakarta.validation.Valid;
@@ -29,11 +30,12 @@ public class OrderController {
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','OWNER','MANAGER','WAITER')")
     public ResponseEntity<ApiResponse<PageResponse<OrderResponse>>> getOrders(
             @PathVariable UUID restaurantId,
+            @RequestParam(required = false) OrderStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         var pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return ResponseEntity.ok(ApiResponse.ok(PageResponse.of(
-                orderService.getOrders(restaurantId, pageable))));
+                orderService.getOrders(restaurantId, status, pageable))));
     }
 
     @GetMapping("/active")
@@ -99,5 +101,17 @@ public class OrderController {
             @PathVariable UUID itemId) {
         return ResponseEntity.ok(ApiResponse.ok(
                 orderService.removeItem(restaurantId, orderId, itemId)));
+    }
+
+    /**
+     * Masque la commande du tableau admin sans la supprimer de la base (conservée pour la comptabilité).
+     */
+    @DeleteMapping("/{orderId}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','OWNER','MANAGER')")
+    public ResponseEntity<ApiResponse<Void>> hideOrder(
+            @PathVariable UUID restaurantId,
+            @PathVariable UUID orderId) {
+        orderService.hideOrder(restaurantId, orderId);
+        return ResponseEntity.ok(ApiResponse.ok("Commande masquée"));
     }
 }

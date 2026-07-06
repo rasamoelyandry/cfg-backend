@@ -69,9 +69,11 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public Page<OrderResponse> getOrders(UUID restaurantId, Pageable pageable) {
-        return orderRepository.findAllByRestaurantIdOrderByCreatedAtDesc(restaurantId, pageable)
-                .map(OrderResponse::from);
+    public Page<OrderResponse> getOrders(UUID restaurantId, OrderStatus status, Pageable pageable) {
+        Page<Order> page = status != null
+                ? orderRepository.findAllByRestaurantIdAndStatusAndHiddenFalseOrderByCreatedAtDesc(restaurantId, status, pageable)
+                : orderRepository.findAllByRestaurantIdAndHiddenFalseOrderByCreatedAtDesc(restaurantId, pageable);
+        return page.map(OrderResponse::from);
     }
 
     @Transactional(readOnly = true)
@@ -144,6 +146,13 @@ public class OrderService {
         if (order.getStatus() != OrderStatus.PENDING) {
             throw new BusinessException("La commande a déjà été prise en charge par la cuisine, elle ne peut plus être modifiée par le serveur");
         }
+    }
+
+    @Transactional
+    public void hideOrder(UUID restaurantId, UUID orderId) {
+        Order order = findOrderInRestaurant(restaurantId, orderId);
+        order.setHidden(true);
+        orderRepository.save(order);
     }
 
     // --- Private helpers ---
