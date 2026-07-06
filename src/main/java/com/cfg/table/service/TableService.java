@@ -69,6 +69,13 @@ public class TableService {
         tableRepository.save(table);
     }
 
+    @Transactional
+    public TableResponse release(UUID restaurantId, UUID tableId) {
+        RestaurantTable table = findInRestaurant(restaurantId, tableId);
+        table.setOccupied(false);
+        return TableResponse.from(tableRepository.save(table));
+    }
+
     private RestaurantTable findInRestaurant(UUID restaurantId, UUID tableId) {
         RestaurantTable table = tableRepository.findById(tableId)
                 .orElseThrow(() -> new ResourceNotFoundException("Table", tableId));

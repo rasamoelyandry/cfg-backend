@@ -28,4 +28,8 @@ public class RestaurantTable extends BaseEntity {
     @Builder.Default
     @Column(nullable = false)
     private boolean isActive = true;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean occupied = false;
 }

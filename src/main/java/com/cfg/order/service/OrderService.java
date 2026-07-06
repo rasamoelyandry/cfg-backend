@@ -44,7 +44,7 @@ public class OrderService {
         }
 
         if (req.getTableId() != null) {
-            validateTableBelongsToRestaurant(req.getTableId(), restaurantId);
+            markTableOccupied(req.getTableId(), restaurantId);
         }
 
         Order order = Order.builder()
@@ -112,7 +112,7 @@ public class OrderService {
     @Transactional
     public OrderResponse transferOrder(UUID restaurantId, UUID orderId, TransferOrderRequest req) {
         Order order = findOrderInRestaurant(restaurantId, orderId);
-        validateTableBelongsToRestaurant(req.getTargetTableId(), restaurantId);
+        markTableOccupied(req.getTargetTableId(), restaurantId);
 
         if (order.getStatus() == OrderStatus.PAID || order.getStatus() == OrderStatus.CANCELLED) {
             throw new BusinessException("Cannot transfer a closed order");
@@ -186,11 +186,15 @@ public class OrderService {
         return order;
     }
 
-    private void validateTableBelongsToRestaurant(UUID tableId, UUID restaurantId) {
+    private void markTableOccupied(UUID tableId, UUID restaurantId) {
         var table = tableRepository.findById(tableId)
                 .orElseThrow(() -> new ResourceNotFoundException("Table", tableId));
         if (!table.getRestaurantId().equals(restaurantId)) {
             throw new TenantAccessException("Table does not belong to this restaurant");
+        }
+        if (!table.isOccupied()) {
+            table.setOccupied(true);
+            tableRepository.save(table);
         }
     }
 

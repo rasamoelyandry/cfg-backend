@@ -17,6 +17,7 @@ public class TableResponse {
     private int capacity;
     @JsonProperty("isActive")
     private boolean isActive;
+    private boolean occupied;
 
     public static TableResponse from(RestaurantTable t) {
         return TableResponse.builder()
@@ -26,6 +27,7 @@ public class TableResponse {
                 .label(t.getLabel())
                 .capacity(t.getCapacity())
                 .isActive(t.isActive())
+                .occupied(t.isOccupied())
                 .build();
     }
 }

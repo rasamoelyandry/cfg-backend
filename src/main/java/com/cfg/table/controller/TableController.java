@@ -55,4 +55,12 @@ public class TableController {
         tableService.delete(restaurantId, tableId);
         return ResponseEntity.ok(ApiResponse.ok("Table deleted"));
     }
+
+    @PatchMapping("/{tableId}/release")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','OWNER','MANAGER','WAITER')")
+    public ResponseEntity<ApiResponse<TableResponse>> release(
+            @PathVariable UUID restaurantId,
+            @PathVariable UUID tableId) {
+        return ResponseEntity.ok(ApiResponse.ok(tableService.release(restaurantId, tableId)));
+    }
 }
