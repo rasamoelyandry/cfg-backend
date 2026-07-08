@@ -134,6 +134,11 @@ public class OrderService {
         Order order = findOrderInRestaurant(restaurantId, orderId);
         requireNotYetInKitchen(order);
 
+        // Materialiser les collections lazy existantes AVANT buildOrderItems : si l'article
+        // ajoute suit son stock, decrementStock (bulk update, clearAutomatically) detache le
+        // contexte de persistance, et tout acces a une collection non chargee echouerait ensuite.
+        order.getItems().forEach(i -> i.getModifiers().size());
+
         List<OrderItem> newItems = buildOrderItems(List.of(itemReq), restaurantId, order);
         order.getItems().addAll(newItems);
         order.recalculateTotal();
