@@ -48,8 +48,7 @@ public class MenuItem extends BaseEntity {
     @Column(name = "stock_quantity", nullable = false)
     private int stockQuantity = 0;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
-    @JoinColumn(name = "menu_item_id")
+    @OneToMany(mappedBy = "menuItem", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @Builder.Default
     private List<MenuItemModifier> modifiers = new ArrayList<>();
 }

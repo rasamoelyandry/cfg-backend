@@ -15,8 +15,9 @@ public class MenuItemModifier {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "menu_item_id", nullable = false)
-    private UUID menuItemId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "menu_item_id", nullable = false)
+    private MenuItem menuItem;
 
     @Column(nullable = false, length = 100)
     private String name;

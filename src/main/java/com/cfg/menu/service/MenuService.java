@@ -98,17 +98,6 @@ public class MenuService {
     public MenuResponse.MenuItemDto createItem(UUID restaurantId, CreateMenuItemRequest req) {
         findCategory(restaurantId, req.getCategoryId());
 
-        List<MenuItemModifier> modifiers = new ArrayList<>();
-        if (req.getModifiers() != null) {
-            modifiers = req.getModifiers().stream()
-                    .map(m -> MenuItemModifier.builder()
-                            .name(m.getName())
-                            .priceDelta(m.getPriceDelta())
-                            .isDefault(m.isDefault())
-                            .build())
-                    .collect(Collectors.toList());
-        }
-
         MenuItem item = MenuItem.builder()
                 .restaurantId(restaurantId)
                 .categoryId(req.getCategoryId())
@@ -120,8 +109,20 @@ public class MenuService {
                 .isAvailable(!req.isTrackStock() || req.getStockQuantity() > 0)
                 .trackStock(req.isTrackStock())
                 .stockQuantity(req.getStockQuantity())
-                .modifiers(modifiers)
                 .build();
+
+        List<MenuItemModifier> modifiers = new ArrayList<>();
+        if (req.getModifiers() != null) {
+            modifiers = req.getModifiers().stream()
+                    .map(m -> MenuItemModifier.builder()
+                            .menuItem(item)
+                            .name(m.getName())
+                            .priceDelta(m.getPriceDelta())
+                            .isDefault(m.isDefault())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+        item.setModifiers(modifiers);
 
         return MenuResponse.MenuItemDto.from(itemRepository.save(item));
     }
@@ -228,27 +229,28 @@ public class MenuService {
 
             List<MenuItem> catItems = byCategory.getOrDefault(src.getId(), List.of());
             for (MenuItem srcItem : catItems) {
+                MenuItem newItem = MenuItem.builder()
+                        .restaurantId(targetId)
+                        .categoryId(newCat.getId())
+                        .name(srcItem.getName())
+                        .description(srcItem.getDescription())
+                        .price(srcItem.getPrice())
+                        .imageUrl(srcItem.getImageUrl())
+                        .sortOrder(srcItem.getSortOrder())
+                        .isAvailable(true)
+                        .build();
+
                 List<MenuItemModifier> newMods = srcItem.getModifiers().stream()
                         .map(m -> MenuItemModifier.builder()
+                                .menuItem(newItem)
                                 .name(m.getName())
                                 .priceDelta(m.getPriceDelta())
                                 .isDefault(m.isDefault())
                                 .build())
                         .collect(Collectors.toList());
+                newItem.setModifiers(newMods);
 
-                itemRepository.save(
-                        MenuItem.builder()
-                                .restaurantId(targetId)
-                                .categoryId(newCat.getId())
-                                .name(srcItem.getName())
-                                .description(srcItem.getDescription())
-                                .price(srcItem.getPrice())
-                                .imageUrl(srcItem.getImageUrl())
-                                .sortOrder(srcItem.getSortOrder())
-                                .isAvailable(true)
-                                .modifiers(newMods)
-                                .build()
-                );
+                itemRepository.save(newItem);
             }
         }
 

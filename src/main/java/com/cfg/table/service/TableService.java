@@ -71,9 +71,9 @@ public class TableService {
 
     @Transactional
     public TableResponse release(UUID restaurantId, UUID tableId) {
-        RestaurantTable table = findInRestaurant(restaurantId, tableId);
-        table.setOccupied(false);
-        return TableResponse.from(tableRepository.save(table));
+        findInRestaurant(restaurantId, tableId);
+        tableRepository.markFree(tableId);
+        return TableResponse.from(findInRestaurant(restaurantId, tableId));
     }
 
     private RestaurantTable findInRestaurant(UUID restaurantId, UUID tableId) {

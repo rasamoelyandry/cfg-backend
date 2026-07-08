@@ -112,7 +112,7 @@ public class OrderService {
     @Transactional
     public OrderResponse transferOrder(UUID restaurantId, UUID orderId, TransferOrderRequest req) {
         Order order = findOrderInRestaurant(restaurantId, orderId);
-        markTableOccupied(req.getTargetTableId(), restaurantId);
+        requireTableExists(req.getTargetTableId(), restaurantId);
 
         if (order.getStatus() == OrderStatus.PAID || order.getStatus() == OrderStatus.CANCELLED) {
             throw new BusinessException("Cannot transfer a closed order");
@@ -121,7 +121,12 @@ public class OrderService {
         order.setTableId(req.getTargetTableId());
         Order saved = orderRepository.save(order);
         eventPublisher.publishOrderEvent("ORDER_TRANSFERRED", saved);
-        return OrderResponse.from(saved);
+        OrderResponse response = OrderResponse.from(saved);
+
+        // Update atomique en dernier : vide le contexte de persistance (voir buildOrderItems).
+        markTableOccupied(req.getTargetTableId(), restaurantId);
+
+        return response;
     }
 
     @Transactional
@@ -187,16 +192,15 @@ public class OrderService {
     }
 
     private void markTableOccupied(UUID tableId, UUID restaurantId) {
+        requireTableExists(tableId, restaurantId);
+        tableRepository.markOccupied(tableId);
+    }
+
+    private void requireTableExists(UUID tableId, UUID restaurantId) {
         var table = tableRepository.findById(tableId)
                 .orElseThrow(() -> new ResourceNotFoundException("Table", tableId));
-        log.info("markTableOccupied CALLED: tableId={} currentOccupied={}", tableId, table.isOccupied());
         if (!table.getRestaurantId().equals(restaurantId)) {
             throw new TenantAccessException("Table does not belong to this restaurant");
-        }
-        if (!table.isOccupied()) {
-            table.setOccupied(true);
-            var saved = tableRepository.save(table);
-            log.info("markTableOccupied SAVED: tableId={} occupiedAfterSave={}", saved.getId(), saved.isOccupied());
         }
     }
 

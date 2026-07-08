@@ -1,6 +1,7 @@
 package com.cfg.user.service;
 
 import com.cfg.common.exception.BusinessException;
+import com.cfg.common.exception.InvalidCredentialsException;
 import com.cfg.common.security.JwtService;
 import com.cfg.user.domain.User;
 import com.cfg.user.dto.LoginRequest;
@@ -34,10 +35,10 @@ public class AuthService {
         User user = findUserByCredentials(request);
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new BusinessException("Invalid credentials");
+            throw new InvalidCredentialsException("Invalid credentials");
         }
         if (!user.isActive()) {
-            throw new BusinessException("Account is disabled");
+            throw new InvalidCredentialsException("Account is disabled");
         }
 
         user.setLastLoginAt(Instant.now());
@@ -75,21 +76,21 @@ public class AuthService {
 
     public LoginResponse refresh(String refreshToken) {
         if (!jwtService.isTokenValid(refreshToken)) {
-            throw new BusinessException("Invalid refresh token");
+            throw new InvalidCredentialsException("Invalid refresh token");
         }
         var userId = jwtService.extractUserId(refreshToken);
         try {
             String stored = redis.opsForValue().get(REFRESH_PREFIX + userId);
             if (stored == null || !stored.equals(refreshToken)) {
-                throw new BusinessException("Refresh token expired or revoked");
+                throw new InvalidCredentialsException("Refresh token expired or revoked");
             }
-        } catch (BusinessException e) {
+        } catch (InvalidCredentialsException e) {
             throw e;
         } catch (Exception e) {
             log.warn("Redis unavailable — skipping refresh token validation: {}", e.getMessage());
         }
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException("User not found"));
+                .orElseThrow(() -> new InvalidCredentialsException("User not found"));
         String newAccess = jwtService.generateAccessToken(
                 user.getId(), user.getRole().name(), user.getRestaurantId());
         return LoginResponse.builder()
@@ -109,11 +110,11 @@ public class AuthService {
     private User findUserByCredentials(LoginRequest req) {
         if (req.getEmail() != null && !req.getEmail().isBlank()) {
             return userRepository.findByEmail(req.getEmail())
-                    .orElseThrow(() -> new BusinessException("Invalid credentials"));
+                    .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
         }
         if (req.getPhone() != null && !req.getPhone().isBlank()) {
             return userRepository.findByPhone(req.getPhone())
-                    .orElseThrow(() -> new BusinessException("Invalid credentials"));
+                    .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
         }
         throw new BusinessException("Email or phone is required");
     }
