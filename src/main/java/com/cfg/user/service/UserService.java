@@ -108,6 +108,89 @@ public class UserService {
         userRepository.save(user);
     }
 
+    // ─── Administrateurs plateforme (SUPER_ADMIN, restaurantId = null) ─────
+
+    @Transactional(readOnly = true)
+    public List<UserResponse> getAllPlatformAdmins() {
+        return userRepository.findAllByRoleAndIsActiveTrue(Role.SUPER_ADMIN)
+                .stream().map(UserResponse::from).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public UserResponse createPlatformAdmin(CreateUserRequest req) {
+        if (req.getEmail() == null && req.getPhone() == null) {
+            throw new BusinessException("Email or phone is required");
+        }
+        if (req.getEmail() != null && userRepository.existsByEmail(req.getEmail())) {
+            throw new BusinessException("Email already in use");
+        }
+        if (req.getPhone() != null && userRepository.existsByPhone(req.getPhone())) {
+            throw new BusinessException("Phone already in use");
+        }
+
+        User user = User.builder()
+                .restaurantId(null)
+                .email(req.getEmail())
+                .phone(req.getPhone())
+                .passwordHash(passwordEncoder.encode(req.getPassword()))
+                .firstName(req.getFirstName())
+                .lastName(req.getLastName())
+                .role(Role.SUPER_ADMIN)
+                .isActive(true)
+                .build();
+
+        return UserResponse.from(userRepository.save(user));
+    }
+
+    @Transactional
+    public UserResponse updatePlatformAdmin(UUID userId, UpdateUserRequest req) {
+        User user = findPlatformAdmin(userId);
+
+        if (req.getFirstName() != null) user.setFirstName(req.getFirstName());
+        if (req.getLastName() != null)  user.setLastName(req.getLastName());
+        if (req.getIsActive() != null)  user.setActive(req.getIsActive());
+
+        if (req.getEmail() != null && !req.getEmail().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(req.getEmail())) {
+                throw new BusinessException("Email already in use");
+            }
+            user.setEmail(req.getEmail());
+        }
+        if (req.getPhone() != null && !req.getPhone().equals(user.getPhone())) {
+            if (userRepository.existsByPhone(req.getPhone())) {
+                throw new BusinessException("Phone already in use");
+            }
+            user.setPhone(req.getPhone());
+        }
+        if (req.getPassword() != null && !req.getPassword().isBlank()) {
+            user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
+        }
+
+        return UserResponse.from(userRepository.save(user));
+    }
+
+    @Transactional
+    public void deletePlatformAdmin(UUID userId, UserPrincipal actor) {
+        User user = findPlatformAdmin(userId);
+        if (user.getId().equals(actor.getId())) {
+            throw new BusinessException("Vous ne pouvez pas désactiver votre propre compte");
+        }
+        if (userRepository.findAllByRoleAndIsActiveTrue(Role.SUPER_ADMIN).size() <= 1) {
+            throw new BusinessException("Impossible de désactiver le dernier administrateur plateforme");
+        }
+        user.setActive(false);
+        userRepository.save(user);
+    }
+
+    private User findPlatformAdmin(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", userId));
+        if (user.getRole() != Role.SUPER_ADMIN) {
+            throw new TenantAccessException("Cet utilisateur n'est pas un administrateur plateforme");
+        }
+        return user;
+    }
+
     // ─── Helpers ─────────────────────────────────────────────────
 
     private User findInRestaurant(UUID restaurantId, UUID userId) {
