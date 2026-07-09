@@ -2,6 +2,7 @@ package com.cfg.order.dto;
 
 import com.cfg.order.domain.Order;
 import com.cfg.order.domain.OrderItem;
+import com.cfg.order.domain.OrderItemModifier;
 import lombok.Builder;
 import lombok.Data;
 
@@ -36,6 +37,14 @@ public class OrderResponse {
         private int quantity;
         private String notes;
         private String status;
+        private List<ModifierResponse> modifiers;
+    }
+
+    @Data @Builder
+    public static class ModifierResponse {
+        private UUID id;
+        private String name;
+        private BigDecimal priceDelta;
     }
 
     public static OrderResponse from(Order o) {
@@ -65,6 +74,15 @@ public class OrderResponse {
                 .quantity(i.getQuantity())
                 .notes(i.getNotes())
                 .status(i.getStatus().name())
+                .modifiers(i.getModifiers().stream().map(OrderResponse::modifierFrom).collect(Collectors.toList()))
+                .build();
+    }
+
+    private static ModifierResponse modifierFrom(OrderItemModifier m) {
+        return ModifierResponse.builder()
+                .id(m.getId())
+                .name(m.getModifierName())
+                .priceDelta(m.getPriceDelta())
                 .build();
     }
 }
