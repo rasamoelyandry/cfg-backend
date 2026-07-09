@@ -144,6 +144,18 @@ public class MenuService {
         if (req.getTrackStock() != null)  item.setTrackStock(req.getTrackStock());
         if (req.getStockQuantity() != null) item.setStockQuantity(req.getStockQuantity());
 
+        if (req.getModifiers() != null) {
+            item.getModifiers().clear();
+            req.getModifiers().forEach(m -> item.getModifiers().add(
+                    MenuItemModifier.builder()
+                            .menuItem(item)
+                            .name(m.getName())
+                            .priceDelta(m.getPriceDelta())
+                            .isDefault(m.isDefault())
+                            .build()
+            ));
+        }
+
         if (item.isTrackStock()) {
             // Dispo derivee automatiquement du stock quand le suivi est actif
             item.setAvailable(item.getStockQuantity() > 0);
